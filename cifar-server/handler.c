@@ -48,8 +48,10 @@ static void Handle(const struct THttpRequest* request, struct THttpResponse* res
             return;
         }
     }
-    if (StartsWith(path, "/static/")) {
-        SendStaticFile(response, path + 1);
+    if (StartsWith(path, "/static/") || strcmp(path, "/static") == 0) {
+        if (!TrySendDirContent(response, path)) { // keep slash
+            SendStaticFile(response, path + 1);
+        }
         free(path);
         return;
     }
