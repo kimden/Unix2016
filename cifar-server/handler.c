@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -30,24 +31,31 @@ static void Handle(const struct THttpRequest* request, struct THttpResponse* res
         return;
     }
 
-    if (strcmp(request->Path, "/") == 0) {
+    char* path = malloc(strlen(request->Path) + 1);
+    UrlToString(path, request->Path);
+
+    if (strcmp(path, "/") == 0) {
         int page = request->QueryString ? GetIntParam(request->QueryString, "page") : 0;
         CreateIndexPage(response, page);
+        free(path);
         return;
     }
-    if (StartsWith(request->Path, "/images/")) {
+    if (StartsWith(path, "/images/")) {
         int n;
-        if (sscanf(request->Path, "/images/%d.bmp", &n) == 1) {
+        if (sscanf(path, "/images/%d.bmp", &n) == 1) {
             SendCifarBitmap(response, n);
+            free(path);
             return;
         }
     }
-    if (StartsWith(request->Path, "/static/")) {
-        SendStaticFile(response, request->Path + 1);
+    if (StartsWith(path, "/static/")) {
+        SendStaticFile(response, path + 1);
+        free(path);
         return;
     }
 
     CreateErrorPage(response, HTTP_NOT_FOUND);
+    free(path);
 }
 
 void ServeClient(int sockfd) {

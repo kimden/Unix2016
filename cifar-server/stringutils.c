@@ -58,3 +58,33 @@ bool EndsWithCI(const char* s, const char* suffix) {
     const size_t suffLen = strlen(suffix);
     return suffLen <= sLen && strcasecmp(s + sLen - suffLen, suffix) == 0;
 }
+
+char CharToHexDigit(char c) {
+    if (c >= 'a')
+        return c - 'a' + 10;
+    if (c >= 'A')
+        return c - 'A' + 10;
+    return c - '0';
+}
+
+char DecodeComplexChar(const char* s) {
+    return (CharToHexDigit(s[0]) << 4) ^ CharToHexDigit(s[1]);
+}
+
+void UrlToString(char* dest, const char* src) {
+    while (*src) {
+        if (*src == '+') {
+            *dest = ' ';
+            ++dest;
+        } else if (*src == '%' && *(src + 1) && *(src + 2) && isxdigit(*(src + 1)) && isxdigit(*(src + 2))) {
+            *dest = DecodeComplexChar(src + 1);
+            ++dest;
+            src += 3;
+        } else {
+            *dest = *src;
+            ++dest;
+            ++src;
+        }
+    }
+    *dest = 0;
+}
