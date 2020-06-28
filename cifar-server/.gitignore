@@ -1,0 +1,5 @@
+*.d
+*.o
+cifar-server
+cifar
+testapp

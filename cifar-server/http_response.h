@@ -23,3 +23,5 @@ const char* GetReasonPhrase(enum EHttpCode code);
 void THttpResponse_Init(struct THttpResponse* self);
 bool THttpResponse_Send(struct THttpResponse* self, int sockfd);
 void THttpResponse_Destroy(struct THttpResponse* self);
+
+#define SERVER_HEADER "Server: C99, https://github.com/kimden/Unix2016/"
