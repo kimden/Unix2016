@@ -174,6 +174,10 @@ static bool ReadWholeFile(int fd, struct TStringBuilder* body) {
 }
 
 void SendStaticFile(struct THttpResponse* response, const char* path) {
+    if (strstr(path, "..") != NULL) {
+        CreateErrorPage(response, HTTP_BAD_REQUEST);
+        return;
+    }
     response->ContentType = GuessContentType(path);
     int fd = open(path, O_RDONLY);
     if (fd == -1) {
