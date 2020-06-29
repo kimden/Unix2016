@@ -17,6 +17,7 @@
 
 void THttpRequest_Init(struct THttpRequest* self) {
     memset(self, 0, sizeof(struct THttpRequest));
+    self->KeepAliveNotice = false;
 }
 
 void THttpRequest_Destroy(struct THttpRequest* self) {
@@ -57,9 +58,18 @@ static bool ParseRequestLine(char* line, struct THttpRequest* out) {
 }
 
 static bool ParseHeaderLine(char* line, struct THttpRequest* out) {
-    // TODO
-    (void)line;
-    (void)out;
+    char* token = strtok(line, "\n");
+    while (token != NULL) {
+        if (strcmp(token, "HTTP/1.1") == 0) {
+            // Keep-alive by default, no need to inform client about it
+            return true;
+        }
+        if (strcmp(token, "Connection: keep-alive") == 0) {
+            out->KeepAliveNotice = true;
+            return true;
+        }
+        token = strtok(NULL, "\n");
+    }
     return true;
 }
 
@@ -132,9 +142,9 @@ static size_t Consume(struct THttpRequestParser* parser, const char* data, size_
     return total;
 }
 
-bool THttpRequest_Receive(struct THttpRequest* self, int sockfd) {
+int THttpRequest_Receive(struct THttpRequest* self, int sockfd) {
     char buf[RECV_BUF_SIZE];
-    bool result = true;
+    int result = 0;
 
     struct THttpRequestParser parser;
     THttpRequestParser_Init(&parser);
@@ -146,12 +156,12 @@ bool THttpRequest_Receive(struct THttpRequest* self, int sockfd) {
                 continue;
             }
             perror("recv");
-            result = false;
+            result = 1;
             break;
         }
         if (ret == 0) {
             // other peer has disconnected
-            result = false;
+            result = 2;
             break;
         }
 
@@ -164,7 +174,7 @@ bool THttpRequest_Receive(struct THttpRequest* self, int sockfd) {
         }
     }
     if (parser.Invalid) {
-        result = false;
+        result = 3;
     }
 
     THttpRequestParser_Destroy(&parser);

@@ -16,6 +16,7 @@ struct THttpResponse {
     enum EHttpCode Code;
     const char* ContentType; // static string
     struct TStringBuilder Body;
+    bool KeepAliveNotice;
 };
 
 const char* GetReasonPhrase(enum EHttpCode code);

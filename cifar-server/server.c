@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -48,7 +49,30 @@ static int CreateSocketToListen(uint16_t port) {
             close(sockfd);
             continue;
         }
-
+        int keepalive = 1;
+        int idle = 1;
+        int count = 3;
+        int interval = 1;
+        if (setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(int)) == -1) {
+            perror("setsockopt SO_KEEPALIVE");
+            close(sockfd);
+            continue;
+        }
+        if (setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) == -1) {
+            perror("setsockopt TCP_KEEPIDLE");
+            close(sockfd);
+            continue;
+        }
+        if (setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(int)) == -1) {
+            perror("setsockopt TCP_KEEPINTVL");
+            close(sockfd);
+            continue;
+        }
+        if (setsockopt(sockfd, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(int)) == -1) {
+            perror("setsockopt TCP_KEEPCNT");
+            close(sockfd);
+            continue;
+        }
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             perror("server: bind");
             close(sockfd);
@@ -89,12 +113,12 @@ static bool RunServerImpl(int sockfd) {
         }
         if (pid == 0) { // this is the child process
             #ifdef DEBUG
-            fprintf(stderr, "Clild born\n");
+            fprintf(stderr, "Child born\n");
             #endif
             close(sockfd); // child doesn't need the listener
             ServeClient(newfd);
             #ifdef DEBUG
-            fprintf(stderr, "Clild dead\n");
+            fprintf(stderr, "Child dead\n");
             #endif
             exit(0);
         }

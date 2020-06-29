@@ -32,6 +32,7 @@ void THttpResponse_Init(struct THttpResponse* self) {
     self->Code = HTTP_OK;
     self->ContentType = NULL;
     TStringBuilder_Init(&self->Body);
+    self->KeepAliveNotice = false;
 }
 
 bool THttpResponse_Send(struct THttpResponse* self, int sockfd) {
@@ -45,6 +46,9 @@ bool THttpResponse_Send(struct THttpResponse* self, int sockfd) {
         TStringBuilder_Sprintf(&headers, "Content-Type: %s" CRLF, self->ContentType);
     }
     TStringBuilder_Sprintf(&headers, "Content-Length: %zu" CRLF, contentLength);
+    if (self->KeepAliveNotice) {
+        TStringBuilder_AppendCStr(&headers, "Connection: keep-alive" CRLF);
+    }
     TStringBuilder_Sprintf(&headers, SERVER_HEADER CRLF);
     TStringBuilder_AppendCStr(&headers, CRLF);
 

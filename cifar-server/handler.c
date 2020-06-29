@@ -26,6 +26,8 @@ static void Handle(const struct THttpRequest* request, struct THttpResponse* res
     );
     #endif
 
+    response->KeepAliveNotice = request->KeepAliveNotice;
+
     if (strcasecmp(request->Method, "GET") != 0) { // case-insensitive compare
         CreateErrorPage(response, HTTP_METHOD_NOT_ALLOWED);
         return;
@@ -61,20 +63,23 @@ static void Handle(const struct THttpRequest* request, struct THttpResponse* res
 }
 
 void ServeClient(int sockfd) {
-    struct THttpRequest req;
-    THttpRequest_Init(&req);
-    struct THttpResponse resp;
-    THttpResponse_Init(&resp);
+    while (1) {
+        struct THttpRequest req;
+        THttpRequest_Init(&req);
+        struct THttpResponse resp;
+        THttpResponse_Init(&resp);
 
-    if (THttpRequest_Receive(&req, sockfd)) {
-        Handle(&req, &resp);
-    } else {
-        CreateErrorPage(&resp, HTTP_BAD_REQUEST);
+        int ret = THttpRequest_Receive(&req, sockfd);
+        if (ret == 0) {
+            Handle(&req, &resp);
+        } else if (ret == 3) {
+            CreateErrorPage(&resp, HTTP_BAD_REQUEST);
+        } else if (ret == 1 || ret == 2) {
+            break;
+        }
+        THttpResponse_Send(&resp, sockfd);
+        THttpResponse_Destroy(&resp);
+        THttpRequest_Destroy(&req);
     }
-
-    THttpResponse_Send(&resp, sockfd);
-    THttpResponse_Destroy(&resp);
-    THttpRequest_Destroy(&req);
-
     close(sockfd);
 }
